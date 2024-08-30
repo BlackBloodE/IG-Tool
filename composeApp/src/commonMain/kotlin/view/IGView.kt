@@ -1,8 +1,9 @@
 package view
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,14 +17,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +32,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.panpf.zoomimage.ZoomImage
+import com.github.panpf.zoomimage.compose.ZoomState
 import com.github.panpf.zoomimage.compose.rememberZoomState
 import com.preat.peekaboo.image.picker.SelectionMode
 import com.preat.peekaboo.image.picker.rememberImagePickerLauncher
@@ -41,10 +43,14 @@ import com.skydoves.flexible.bottomsheet.material.FlexibleBottomSheet
 import com.skydoves.flexible.core.FlexibleSheetSize
 import com.skydoves.flexible.core.FlexibleSheetState
 import com.skydoves.flexible.core.rememberFlexibleBottomSheetState
+import compose.icons.Octicons
+import compose.icons.octicons.ScreenFull24
+import compose.icons.octicons.ScreenNormal24
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import utlis.ImageRatio
 import utlis.cropImage
 import utlis.determineAspectRatio
+import utlis.isLandscape
 
 
 @Preview
@@ -53,27 +59,12 @@ fun IGView() {
     InstagramPostItem()
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun InstagramPostItem() {
-    var selectImage: ImageBitmap? by remember {
-        mutableStateOf(null)
-    }
-
-    var showImage: ImageBitmap? by remember {
-        mutableStateOf(null)
-    }
-
-    var isShowFillBtn by remember {
-        mutableStateOf(false)
-    }
-
-    var isFill by remember {
-        mutableStateOf(false)
-    }
-
-    var isShowSheet by remember {
-        mutableStateOf(false)
-    }
+    val viewModel: IGViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsState()
+    val zoomState = rememberZoomState()
 
     val sheetState = rememberFlexibleBottomSheetState(
         flexibleSheetSize = FlexibleSheetSize(
@@ -93,14 +84,7 @@ fun InstagramPostItem() {
         onResult = { byteArrays ->
             byteArrays.firstOrNull()?.let {
                 // Process the selected images' ByteArrays.
-                selectImage = it.toImageBitmap()
-                if (selectImage.determineAspectRatio() == ImageRatio.Unknown) {
-                    isShowFillBtn = true
-                    isShowSheet = true
-                } else {
-                    showImage = selectImage
-                    isShowFillBtn = false
-                }
+                viewModel.onImageSelected(it.toImageBitmap())
             }
         }
     )
@@ -136,11 +120,19 @@ fun InstagramPostItem() {
         Spacer(modifier = Modifier.height(8.dp))
         // 貼文圖片
         Box(
-            modifier = Modifier.clickable {
-                singleImagePicker.launch()
-            }.background(color = Color.Red)
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = Color.Red)
+                .combinedClickable(
+                    onClick = {
+                        singleImagePicker.launch()
+                    },
+                    onLongClick = {
+                        viewModel.showEditSheet()
+                    }
+                )
         ) {
-            if (showImage == null) {
+            if (uiState.showImg == null) {
                 Box(
                     modifier = Modifier
                         .aspectRatio(16f / 9f) // 設定 16:9 的長寬比
@@ -148,37 +140,25 @@ fun InstagramPostItem() {
                 )
             } else {
                 Image(
-                    bitmap = showImage!!,
+                    bitmap = uiState.showImg!!,
                     contentDescription = "貼文圖片",
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth
                 )
             }
-//            if (isShowFillBtn) {
-//                if (isFill) {
-//                    selectImage?.let {
-//                        showImage = autoAddBorder(
-//                            originalImage = it
-//                        )
-//                    }
-//                } else {
-//                    val targetAspectRatio =
-//                        if (selectImage!!.width > selectImage!!.height) 3f / 2f else 4f / 5f
-//                    selectImage?.let {
-//                        showImage = it.cropToAspectRatio(targetAspectRatio)
-//                    }
-//                }
-//                IconButton(
-//                    onClick = {
-//                        isFill = !isFill
-//                    },
-//                    modifier = Modifier.align(Alignment.BottomStart)
-//                ) {
-//                    Image(
-//                        imageVector = if (isFill) Octicons.ScreenNormal24 else Octicons.ScreenFull24,
-//                        contentDescription = "縮放"
-//                    )
-//                }
-//            }
+            if (uiState.isFillButtonVisible) {
+                IconButton(
+                    onClick = {
+                        viewModel.toggleFillMode()
+                    },
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    Image(
+                        imageVector = if (uiState.isFill) Octicons.ScreenNormal24 else Octicons.ScreenFull24,
+                        contentDescription = "縮放"
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         // 貼文互動列
@@ -236,13 +216,13 @@ fun InstagramPostItem() {
         )
     }
 
-    if (isShowSheet && selectImage != null) {
+    if (uiState.isSheetVisible && uiState.selectImg != null) {
         ImageEditorView(
-            image = selectImage!!,
+            image = uiState.selectImg!!,
+            zoomState = zoomState,
             sheetState = sheetState,
             onDismissRequest = { resultImage ->
-                isShowSheet = false
-                showImage = resultImage
+                viewModel.onImageEdited(resultImage)
             }
         )
     }
@@ -251,10 +231,10 @@ fun InstagramPostItem() {
 @Composable
 fun ImageEditorView(
     image: ImageBitmap,
+    zoomState: ZoomState,
     sheetState: FlexibleSheetState,
     onDismissRequest: (resultImage: ImageBitmap) -> Unit
 ) {
-    val zoomState = rememberZoomState()
     val ratio = when (image.determineAspectRatio()) {
         ImageRatio._16_9 -> 16f / 9f
         ImageRatio._3_2 -> 3f / 2f
@@ -263,7 +243,7 @@ fun ImageEditorView(
         ImageRatio._4_5 -> 4f / 5f
         ImageRatio._1_1 -> 1f
         else -> {
-            if (image.determineAspectRatio().isLandscape) {
+            if (image.isLandscape()) {
                 16f / 9f
             } else {
                 4f / 5f
@@ -275,13 +255,10 @@ fun ImageEditorView(
         sheetState = sheetState,
         onDismissRequest = {
             val resultImage = image.cropImage(
-                offset = zoomState.zoomable.transform.offset,
-                scaleX = zoomState.zoomable.transform.scaleX,
-                scaleY = zoomState.zoomable.transform.scaleY,
-                targetAspectRatio = ratio
+                displayRect = zoomState.zoomable.contentDisplayRect,
+                containerSize = zoomState.zoomable.containerSize
             )
-            println(resultImage.width)
-            println(resultImage.height)
+            println(resultImage.determineAspectRatio())
             onDismissRequest(resultImage)
         }
     ) {
@@ -293,7 +270,7 @@ fun ImageEditorView(
                 contentDescription = "view image",
                 modifier = Modifier.fillMaxSize(),
                 zoomState = zoomState,
-                contentScale = ContentScale.FillWidth,
+                contentScale = if (image.isLandscape()) ContentScale.FillHeight else ContentScale.FillWidth,
                 scrollBar = null
             )
         }

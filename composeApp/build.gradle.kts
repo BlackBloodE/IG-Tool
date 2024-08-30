@@ -79,6 +79,8 @@ kotlin {
             implementation(libs.zoomimage.compose)
 
             implementation(libs.flexible.bottomsheet.material)
+
+            implementation(libs.lifecycle.viewmodel.compose)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

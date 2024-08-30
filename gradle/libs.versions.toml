@@ -19,10 +19,11 @@ cupertinoNative = "0.1.0-alpha04"
 cupertinoAdaptive = "0.1.0-alpha04"
 cupertinoDecompose = "0.1.0-alpha04"
 cupertinoIconsExtended = "0.1.0-alpha04"
+lifecycleViewmodelCompose = "2.8.0"
 peekaboo = "0.5.2"
 composeIcons = "1.1.0"
 firebaseCrashlyticsBuildtools = "3.0.2"
-zoomimageCompose = "1.1.0-alpha05"
+zoomimageCompose = "1.1.0-beta01"
 
 [libraries]
 flexible-bottomsheet-material = { module = "com.github.skydoves:flexible-bottomsheet-material", version.ref = "flexibleBottomsheetMaterial" }
@@ -41,6 +42,7 @@ cupertino-native = { group = "io.github.alexzhirkevich", name = "cupertino-nativ
 cupertino-adaptive = { group = "io.github.alexzhirkevich", name = "cupertino-adaptive", version.ref = "cupertinoAdaptive" }
 cupertino-decompose = { group = "io.github.alexzhirkevich", name = "cupertino-decompose", version.ref = "cupertinoDecompose" }
 cupertino-icons-extended = { group = "io.github.alexzhirkevich", name = "cupertino-icons-extended", version.ref = "cupertinoIconsExtended" }
+lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 peekaboo-ui = { module = "io.github.onseok:peekaboo-ui", version.ref = "peekaboo" }
 peekaboo-image-picker = { module = "io.github.onseok:peekaboo-image-picker", version.ref = "peekaboo" }
 composeIcons-cssGg = { module = "br.com.devsrsouza.compose.icons:css-gg", version.ref = "composeIcons" }

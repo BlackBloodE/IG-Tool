@@ -5,8 +5,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.abs
 
@@ -119,6 +121,41 @@ fun ImageBitmap.cropImage(
     return croppedBitmap
 }
 
+fun ImageBitmap.cropImage(
+    displayRect: IntRect,
+    containerSize: IntSize,
+): ImageBitmap {
+    val scaleX = displayRect.width / this.width.toFloat()
+    val scaleY = displayRect.height / this.height.toFloat()
+    val width = (containerSize.width / scaleX).toInt()
+    val height = (containerSize.height / scaleY).toInt()
+    val offset = IntOffset(
+        abs(displayRect.left / scaleX).toInt(),
+        abs(displayRect.top / scaleY).toInt()
+    )
+
+
+    println("cropImage(offset = $offset, width = $width, height = $height)")
+    // Create a new ImageBitmap with the cropped dimensions
+    val croppedBitmap = ImageBitmap(width, height)
+
+    // Draw the cropped area onto the new ImageBitmap
+    val canvas = Canvas(croppedBitmap)
+    canvas.drawImageRect(
+        image = this,
+        srcOffset = offset,
+        srcSize = IntSize(width, height),
+        dstSize = IntSize(width, height),
+        paint = Paint()
+    )
+
+    return croppedBitmap
+}
+
+fun ImageBitmap.isLandscape(): Boolean {
+    return this.width > this.height
+}
+
 data class Quadruple(val targetWidth: Int, val targetHeight: Int, val xOffset: Int, val yOffset: Int)
 
 fun createImageWithBorder(
@@ -145,7 +182,12 @@ fun createImageWithBorder(
         finalWidth = (originalHeight * targetAspectRatioDouble).toInt()
     }
 
-    val resultBitmap = ImageBitmap(finalWidth, finalHeight)
+//    println("originalWidth: $originalWidth")
+//    println("originalHeight: $originalHeight")
+//    println("finalWidth: $finalWidth")
+//    println("finalHeight: $finalHeight")
+
+    val resultBitmap = ImageBitmap(finalWidth, finalHeight, ImageBitmapConfig.Rgb565)
     val canvas = Canvas(resultBitmap)
 
     // Fill the canvas with border color
